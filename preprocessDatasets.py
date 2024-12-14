@@ -3,6 +3,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 
+# followed this tutorial https://medium.com/@cuneytharp/make-a-classification-model-with-sklearn-step-by-step-2199a12e4dfe
 def preprocess_adult():
     # load data
     adult = fetch_ucirepo(id=2)
@@ -17,6 +18,31 @@ def preprocess_adult():
     df.dropna(inplace=True)
     
     return df
+
+
+def preprocess_iris():
+    
+    iris = fetch_ucirepo(id=53)
+    # load data into dataframe for easier preprocessing
+    df = pd.concat([iris["data"]["features"],iris["data"]["targets"] ],axis=1)
+    # no preprocessing needed
+    return df
+
+def preprocess_heart_disease():
+    data = fetch_ucirepo(id=45)
+    # load data into dataframe for easier preprocessing
+    df = pd.concat([data["data"]["features"],data["data"]["targets"] ],axis=1)
+    # remove nan values
+    df.dropna(inplace=True)
+    return df
+
+def preprocess_accute_inflammations():
+    data = fetch_ucirepo(id=184)
+    # load data into dataframe for easier preprocessing
+    df = pd.concat([data["data"]["features"],data["data"]["targets"] ],axis=1)
+    # no further preprocessing needed
+    return df
+    
     
     
     
