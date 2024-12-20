@@ -34,7 +34,8 @@ def cluster_accuracy(y_true, y_pred):
     remapped_y_pred = np.vectorize(label_map.get)(y_pred)
     # Calculate accuracy
     accuracy = accuracy_score(y_true, remapped_y_pred)
-    return accuracy
+    f1_score = f1_score(y_true, remapped_y_pred)
+    return accuracy, f1_score
 
 def clustering_classification(ClusteringClass, cls_name, params, X_train, y_train, X_test, y_test, random_seed, k_folds):
     """
@@ -223,10 +224,10 @@ def agg_clustering(X_train, y_train, X_test, y_test, RANDOM_SEED):
     agg_clustering = AgglomerativeClustering(n_clusters=len(np.unique(y_train)), metric=best_params["metric"], linkage=best_params["linkage"])    
     train_pred = agg_clustering.fit_predict(X_train_transformed)
     test_pred = agg_clustering.fit_predict(X_test_transformed)
-    train_acc = cluster_accuracy(y_train, train_pred)
-    test_acc = cluster_accuracy(y_test, test_pred)
+    train_acc, train_f1 = cluster_accuracy(y_train, train_pred)
+    test_acc, test_f1 = cluster_accuracy(y_test, test_pred)
     
-    _, train_f1, _, test_f1, cm_train, cm_test = metrics_and_plot_cm("agglo", y_train, train_pred, y_test, test_pred)
+    _, _, _, _, cm_train, cm_test = metrics_and_plot_cm("agglo", y_train, train_pred, y_test, test_pred)
     
     return train_acc, train_f1, test_acc, test_f1, cm_train, cm_test
 
