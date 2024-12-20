@@ -17,9 +17,9 @@ import pandas as pd
 import seaborn as sns
 from ucimlrepo import fetch_ucirepo, list_available_datasets
 
-def cluster_accuracy(y_true, y_pred):
+def remap_labels_hungarian(y_true, y_pred):
     """
-    Align clustering labels with true labels and calculate accuracy.
+    Remap cluster labels based on hungarian algorithm.
     """
     # create contingency table, similar to confusion matrix   
     contingency_table = confusion_matrix(y_true, y_pred)
@@ -32,10 +32,8 @@ def cluster_accuracy(y_true, y_pred):
     # remapping of labels
     label_map = dict(zip(col_ind, row_ind))
     remapped_y_pred = np.vectorize(label_map.get)(y_pred)
-    # Calculate accuracy
-    accuracy = accuracy_score(y_true, remapped_y_pred)
-    f1_score = f1_score(y_true, remapped_y_pred)
-    return accuracy, f1_score
+    
+    return remapped_y_pred
 
 def clustering_classification(ClusteringClass, cls_name, params, X_train, y_train, X_test, y_test, random_seed, k_folds):
     """
@@ -116,24 +114,17 @@ def classification_cv(ClusteringClass, cls_name, params, X_train, y_train, k_fol
             X_valid = scaler_cv.transform(X_valid)
             valid_clusters = clustering_algorithm.predict(X_valid)
 
-            #TODO make work for all clustering methods
-            # hungarian algorithm 
-            if cls_name == "agglomerative_clustering":
-                train_acc = cluster_accuracy(y_train_cv, cluster_labels_cv)
-                valid_acc = cluster_accuracy(y_valid, valid_clusters)
-
             # Using most common label in cluster to give label to whole cluster
-            else:
-                labels_map_cv = {}
-                for cluster_cv in np.unique(cluster_labels_cv):
-                    # selects the most common label for that cluster
-                    class_label_cv = mode(y_train_cv[cluster_labels_cv == cluster_cv])[0]
-                    labels_map_cv[cluster_cv] = class_label_cv # map that label to the cluster
-                # maps cluster to labels
-                y_pred_train_cv = np.array([labels_map_cv[cluster_cv] for cluster_cv in cluster_labels_cv])
-                y_pred_valid = np.array([labels_map_cv[cluster_cv] for cluster_cv in valid_clusters])
-                valid_acc = accuracy_score(y_valid, y_pred_valid)
-                train_acc = accuracy_score(y_train_cv, y_pred_train_cv)
+            labels_map_cv = {}
+            for cluster_cv in np.unique(cluster_labels_cv):
+                # selects the most common label for that cluster
+                class_label_cv = mode(y_train_cv[cluster_labels_cv == cluster_cv])[0]
+                labels_map_cv[cluster_cv] = class_label_cv # map that label to the cluster
+            # maps cluster to labels
+            y_pred_train_cv = np.array([labels_map_cv[cluster_cv] for cluster_cv in cluster_labels_cv])
+            y_pred_valid = np.array([labels_map_cv[cluster_cv] for cluster_cv in valid_clusters])
+            valid_acc = accuracy_score(y_valid, y_pred_valid)
+            train_acc = accuracy_score(y_train_cv, y_pred_train_cv)
 
             avg_train_acc += train_acc
             avg_valid_acc += valid_acc
@@ -200,8 +191,11 @@ def agg_clustering(X_train, y_train, X_test, y_test, RANDOM_SEED):
         train_pred = agg_clustering.fit_predict(X_transformed)
         val_pred = agg_clustering.fit_predict(X_val_transformed)
         
-        train_acc = cluster_accuracy(y_train, train_pred)
-        val_acc = cluster_accuracy(y_val, val_pred)
+        train_pred_remapped = remap_labels_hungarian(y_train, train_pred)
+        val_pred_remapped = remap_labels_hungarian(y_val, val_pred)
+        
+        train_acc = accuracy_score(y_train, train_pred_remapped)
+        val_acc = accuracy_score(y_val, val_pred_remapped)
         
         # use a score to select hyperparams both based on best train accuracy but also on best validation accuracy
         #gamma = 0.5
@@ -224,10 +218,11 @@ def agg_clustering(X_train, y_train, X_test, y_test, RANDOM_SEED):
     agg_clustering = AgglomerativeClustering(n_clusters=len(np.unique(y_train)), metric=best_params["metric"], linkage=best_params["linkage"])    
     train_pred = agg_clustering.fit_predict(X_train_transformed)
     test_pred = agg_clustering.fit_predict(X_test_transformed)
-    train_acc, train_f1 = cluster_accuracy(y_train, train_pred)
-    test_acc, test_f1 = cluster_accuracy(y_test, test_pred)
     
-    _, _, _, _, cm_train, cm_test = metrics_and_plot_cm("agglo", y_train, train_pred, y_test, test_pred)
+    train_pred_remapped = remap_labels_hungarian(y_train, train_pred)
+    test_pred_remapped = remap_labels_hungarian(y_test, test_pred)
+    
+    train_acc, train_f1, test_acc, test_f1, cm_train, cm_test = metrics_and_plot_cm("agglo", y_train, train_pred_remapped, y_test, test_pred_remapped)
     
     return train_acc, train_f1, test_acc, test_f1, cm_train, cm_test
 
