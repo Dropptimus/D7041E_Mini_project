@@ -44,15 +44,15 @@ def clustering_classification(ClusteringClass, cls_name, params, X_train, y_trai
 
     params = classification_cv(ClusteringClass, cls_name, params, X_train, y_train, k_folds, random_seed)
 
-    # create k-means classifier
-    kmeans = ClusteringClass(random_state=RANDOM_SEED, **params)
+    # create classifier
+    clf = ClusteringClass(random_state=RANDOM_SEED, **params)
 
     # normalize train data
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)
-    kmeans.fit(X_train)
+    clf.fit(X_train)
 
-    cluster_labels = kmeans.predict(X_train)
+    cluster_labels = clf.predict(X_train)
     # Map using mode because it is the most common class for that cluster
     # https://stats.stackexchange.com/questions/51418/assigning-class-labels-to-k-means-clusters
     labels_map = {}
@@ -67,7 +67,7 @@ def clustering_classification(ClusteringClass, cls_name, params, X_train, y_trai
     X_test = scaler.transform(X_test)
 
     # predict and map for test set
-    test_clusters = kmeans.predict(X_test)
+    test_clusters = clf.predict(X_test)
     y_pred_test = np.array([labels_map[cluster] for cluster in test_clusters])
 
     train_acc, train_f1, test_acc, test_f1, cm_train, cm_test = metrics_and_plot_cm(cls_name, y_train, y_pred_train, y_test, y_pred_test)
@@ -152,6 +152,78 @@ def classification_cv(ClusteringClass, cls_name, params, X_train, y_train, k_fol
     print("Cross validation best parameters: ", best_params)
 
     return best_params
+
+def agg_clustering(X_train, y_train, X_test, y_test, RANDOM_SEED):
+        
+    # split train set into train and validation set to perform a grid search
+    # TODO
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=RANDOM_SEED)
+    
+    # Scaling based on train set
+    scaler = StandardScaler() 
+    X_train_scaled = scaler.fit_transform(X_train)
+    
+    # scale val and test set with params of train set
+    X_val_scaled = scaler.transform(X_val)
+    X_test_scaled = scaler.transform(X_test)
+    
+    # create grid or params that we want to test
+    metrics = ["euclidean", "l1", "l2", "manhattan"]
+    linkages = ["complete", "average", "single"]
+    pca_options = [True, False]
+    
+    # Ensure ward is only paired with euclidean
+    param_grid = [
+        {'metric': 'euclidean', 'linkage': 'ward', 'pca': pca}
+        for pca in pca_options
+    ] + [
+        {'metric': metric, 'linkage': linkage, 'pca': pca}
+        for metric, linkage, pca in product(metrics, linkages, pca_options)
+        if linkage != 'ward' or metric == 'euclidean'
+    ]
+    
+    best_score = -1
+    best_params = None
+    
+    for params in param_grid:
+        
+        # apply PCA if specified
+        if params["pca"]:
+            pca = PCA(n_components = 2, random_state=RANDOM_SEED) 
+            X_transformed = pca.fit_transform(X_train_scaled) 
+            X_val_transformed = pca.transform(X_val_scaled)
+        else:
+            X_transformed = X_train_scaled
+            X_val_transformed = X_val_scaled
+            
+        agg_clustering = AgglomerativeClustering(n_clusters=len(np.unique(y_train)), metric=params["metric"], linkage=params["linkage"])
+        train_pred = agg_clustering.fit_predict(X_transformed)
+        val_pred = agg_clustering.fit_predict(X_val_transformed)
+        
+        train_acc = cluster_accuracy(y_train, train_pred)
+        val_acc = cluster_accuracy(y_val, val_pred)
+        
+        # use a score to select hyperparams both based on best train accuracy but also on best validation accuracy
+        #gamma = 0.5
+        #score = val_acc - gamma * abs(train_acc - val_acc)
+        score = 0.8 * val_acc + 0.2 * train_acc
+        if score > best_score:
+            best_params = params
+            best_score = score
+            
+    print(f"Best score {best_score} with params {best_params}")
+    if best_params["pca"]:
+        pca = PCA(n_components = 2, random_state=RANDOM_SEED) 
+        pca.fit(X_train_scaled) 
+        X_test_transformed = pca.transform(X_test_scaled)
+    else:
+        X_test_transformed = X_test_scaled
+        
+    
+    agg_clustering = AgglomerativeClustering(n_clusters=len(np.unique(y_train)), metric=best_params["metric"], linkage=best_params["linkage"])    
+    test_pred = agg_clustering.fit_predict(X_test_transformed)
+    test_acc = cluster_accuracy(y_test, test_pred)
+    print(f"Test accuracy = {test_acc}")
 
 def metrics_and_plot_cm(clf_name, y_train, y_pred_train, y_test, y_pred_test, display = False):
     """
