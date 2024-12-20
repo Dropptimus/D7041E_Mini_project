@@ -49,8 +49,11 @@ def import_dataset(uci_id, encoder):
     num_cols = X._get_numeric_data().columns
     #print(num_cols)
     categorical_cols = list(set(cols) - set(num_cols))
-    #print(categorical_cols)
-    X.loc[:, categorical_cols] = encode_categorical_features(X[categorical_cols], encoder)
+    print(categorical_cols)
+    #X_temp = X.copy()
+    #X.loc[:, categorical_cols] = encode_categorical_features(X[categorical_cols], encoder)
+    X.loc[:, categorical_cols] = encode_categorical_features(X.loc[:, categorical_cols], encoder)
+
     
     # check if encoding has worked
     # https://stackoverflow.com/questions/26924904/check-if-dataframe-column-is-categorical
@@ -105,6 +108,8 @@ def test_classifier(clf, clf_name, params, X_train, y_train, X_test, y_test):
     disp = ConfusionMatrixDisplay(confusion_matrix=cm_test, display_labels=gs_knn.classes_)
     disp.plot()
     plt.show()
+    
+    return cm_train
 
 # unsupervised classifiers
 
