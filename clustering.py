@@ -240,13 +240,11 @@ def metrics_and_plot_cm(clf_name, y_train, y_pred_train, y_test, y_pred_test, di
     """
     labels = np.unique(y_train)
     train_acc = accuracy_score(y_train, y_pred_train)
-    # TODO
     train_f1 = f1_score(y_train, y_pred_train, average="weighted")
     #train_score = gs_knn.score(X_train, y_train)
 
     # test on test set
     test_acc = accuracy_score(y_test, y_pred_test)
-    # TODO
     test_f1 = f1_score(y_test, y_pred_test, average="weighted")
     #test_score = gs_knn.score(X_test, y_test)
 
