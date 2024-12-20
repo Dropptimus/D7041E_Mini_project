@@ -21,9 +21,6 @@ def cluster_accuracy(y_true, y_pred):
     """
     Align clustering labels with true labels and calculate accuracy.
     """
-    for i in y_true:
-        print(i, end=" ")
-    print(y_pred)
     # create contingency table, similar to confusion matrix   
     contingency_table = confusion_matrix(y_true, y_pred)
 
