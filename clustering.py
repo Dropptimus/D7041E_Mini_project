@@ -159,7 +159,7 @@ def classification_cv(ClusteringClass, cls_name, params, X_train, y_train, k_fol
 def agg_clustering(X_train, y_train, X_test, y_test, RANDOM_SEED):
         
     # split train set into train and validation set to perform a grid search
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=RANDOM_SEED)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=RANDOM_SEED)
     
     # Scaling based on train set
     scaler = StandardScaler() 
@@ -293,7 +293,7 @@ def test_classifier(clf, clf_name, params, X_train, y_train, X_test, y_test, dis
 
     return train_acc, train_f1, test_acc, test_f1, cm_train, cm_test
 
-def write(writer, cls_name, cm, dataset_split, step):
+def write(writer, dataset_name, cls_name, cm, dataset_split, step):
         """
         Writes confusion matrix to tensorboard
         """
@@ -304,7 +304,7 @@ def write(writer, cls_name, cm, dataset_split, step):
         sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax)
         ax.set_xlabel("Predicted labels")
         ax.set_ylabel("True labels")
-        ax.set_title(cls_name)
+        ax.set_title(dataset_name + cls_name)
         writer.add_figure("Confusion matrix " + dataset_split + " " + cls_name, fig, step)
         plt.close(fig)
 
