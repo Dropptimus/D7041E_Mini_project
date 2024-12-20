@@ -8,7 +8,7 @@ from sklearn.cluster import AgglomerativeClustering
 from sklearn.preprocessing import StandardScaler
 from itertools import product
 from collections import ChainMap
-from sklearn.model_selection import KFold
+from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import GridSearchCV
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
@@ -93,7 +93,7 @@ def classification_cv(ClusteringClass, cls_name, params, X_train, y_train, k_fol
         avg_valid_acc = 0
         # create clustering class
         clustering_algorithm = ClusteringClass(random_state=RANDOM_SEED, **param_comb)
-        kf = KFold(n_splits=K_FOLDS, random_state=42, shuffle=True)
+        kf = StratifiedKFold(n_splits=K_FOLDS, random_state=42, shuffle=True)
         kf.get_n_splits(X_train)
 
         # Loop through the folds
@@ -104,15 +104,15 @@ def classification_cv(ClusteringClass, cls_name, params, X_train, y_train, k_fol
 
             # Normalize
             scaler_cv = StandardScaler()
-            X_train_cv = scaler_cv.fit_transform(X_train_cv)
+            X_train_cv_scaled = scaler_cv.fit_transform(X_train_cv)
 
             # Fit and predict training
-            clustering_algorithm.fit(X_train_cv)
-            cluster_labels_cv = clustering_algorithm.predict(X_train_cv)
+            clustering_algorithm.fit(X_train_cv_scaled)
+            cluster_labels_cv = clustering_algorithm.predict(X_train_cv_scaled)
 
             # fit and predict validation
-            X_valid = scaler_cv.transform(X_valid)
-            valid_clusters = clustering_algorithm.predict(X_valid)
+            X_valid_scaled = scaler_cv.transform(X_valid)
+            valid_clusters = clustering_algorithm.predict(X_valid_scaled)
 
             # Using most common label in cluster to give label to whole cluster
             labels_map_cv = {}
@@ -207,6 +207,7 @@ def agg_clustering(X_train, y_train, X_test, y_test, RANDOM_SEED):
             
     print(f"Best score {best_score} with params {best_params}")
     if best_params["pca"]:
+        # Had to add this back or got error
         pca = PCA(n_components = 2, random_state=RANDOM_SEED) 
         X_train_transformed = pca.fit_transform(X_train_scaled) 
         X_test_transformed = pca.transform(X_test_scaled)
@@ -304,17 +305,28 @@ def save_metrics_to_dict(clf_name,
                          train_f1, 
                          test_acc, 
                          test_f1, 
-                         train_acc_dict, 
-                         train_f1_dict, 
-                         test_acc_dict, 
-                         test_f1_dict):
-        
-        train_acc_dict[clf_name] = train_acc
-        train_f1_dict[clf_name] = train_f1
-        test_acc_dict[clf_name] = test_acc
-        test_f1_dict[clf_name] = test_f1
+                         metrics_dict,
+                         length
+                         ):
+        length += 1
 
-        return train_acc_dict, train_f1_dict, test_acc_dict, test_f1_dict
+        metrics_dict["train_acc_dict"][clf_name] = train_acc
+        metrics_dict["train_f1_dict"][clf_name] = train_f1
+        metrics_dict["test_acc_dict"][clf_name] = test_acc
+        metrics_dict["test_f1_dict"][clf_name] = test_f1
+
+        if length == 1:
+            metrics_dict["train_acc_avg"][clf_name+"_avg"] = train_acc
+            metrics_dict["train_f1_avg"][clf_name+"_avg"] = train_f1
+            metrics_dict["test_acc_avg"][clf_name+"_avg"] = test_acc 
+            metrics_dict["test_f1_avg"][clf_name+"_avg"] = test_f1
+        else:
+            metrics_dict["train_acc_avg"][clf_name+"_avg"] = (train_acc + metrics_dict["train_acc_avg"][clf_name+"_avg"]) / 2
+            metrics_dict["train_f1_avg"][clf_name+"_avg"] = (train_f1 + metrics_dict["train_f1_avg"][clf_name+"_avg"]) / 2
+            metrics_dict["test_acc_avg"][clf_name+"_avg"] = (test_acc + metrics_dict["test_acc_avg"][clf_name+"_avg"]) / 2
+            metrics_dict["test_f1_avg"][clf_name+"_avg"] = (test_f1 + metrics_dict["test_f1_avg"][clf_name+"_avg"]) / 2
+
+        return metrics_dict
 
 # function for converting categorical features into numerical
 def encode_categorical_features(X, encoder):
