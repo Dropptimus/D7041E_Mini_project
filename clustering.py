@@ -1,13 +1,16 @@
 from scipy.optimize import linear_sum_assignment
 import numpy as np
 from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.model_selection import train_test_split
 from scipy.stats import mode
 from sklearn.cluster import KMeans, AffinityPropagation
+from sklearn.cluster import AgglomerativeClustering
 from sklearn.preprocessing import StandardScaler
 from itertools import product
 from collections import ChainMap
 from sklearn.model_selection import KFold
 from sklearn.model_selection import GridSearchCV
+from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 from sklearn.pipeline import Pipeline
 import pandas as pd
@@ -156,7 +159,6 @@ def classification_cv(ClusteringClass, cls_name, params, X_train, y_train, k_fol
 def agg_clustering(X_train, y_train, X_test, y_test, RANDOM_SEED):
         
     # split train set into train and validation set to perform a grid search
-    # TODO
     X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=RANDOM_SEED)
     
     # Scaling based on train set
@@ -214,16 +216,23 @@ def agg_clustering(X_train, y_train, X_test, y_test, RANDOM_SEED):
     print(f"Best score {best_score} with params {best_params}")
     if best_params["pca"]:
         pca = PCA(n_components = 2, random_state=RANDOM_SEED) 
-        pca.fit(X_train_scaled) 
+        X_train_transformed = pca.fit_transform(X_train_scaled) 
         X_test_transformed = pca.transform(X_test_scaled)
     else:
+        X_train_transformed = X_train_scaled
         X_test_transformed = X_test_scaled
         
     
     agg_clustering = AgglomerativeClustering(n_clusters=len(np.unique(y_train)), metric=best_params["metric"], linkage=best_params["linkage"])    
+    train_pred = agg_clustering.fit_predict(X_train_transformed)
     test_pred = agg_clustering.fit_predict(X_test_transformed)
+    train_acc = cluster_accuracy(y_train, train_pred)
     test_acc = cluster_accuracy(y_test, test_pred)
-    print(f"Test accuracy = {test_acc}")
+    
+    _, train_f1, _, test_f1, cm_train, cm_test = metrics_and_plot_cm("agglo", y_train, train_pred, y_test, test_pred)
+    
+    return train_acc, train_f1, test_acc, test_f1, cm_train, cm_test
+
 
 def metrics_and_plot_cm(clf_name, y_train, y_pred_train, y_test, y_pred_test, display = False):
     """
