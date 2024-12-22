@@ -311,72 +311,114 @@ def save_metrics_to_dict(clf_name,
                          ):
         dataset_step_id += 1
 
-        # if (clf_name not in metrics_dict["train_acc_dict"]) and [str(dataset_step_id)] not in metrics_dict["train_acc_dict"][clf_name]:
-        #     metrics_dict["train_acc_dict"][clf_name][str(dataset_step_id)] = train_acc
-        # else:
-        #     metrics_dict["train_acc_dict"][clf_name][str(dataset_step_id)] = (train_acc + metrics_dict["train_acc_dict"][clf_name][str(dataset_step_id)]) / 2
+        if clf_name not in metrics_dict["train_acc_dict"] or seed == 41:
+            metrics_dict["train_acc_dict"][clf_name] = train_acc
+        elif seed == 45:
+            metrics_dict["train_acc_dict"][clf_name] += train_acc
+            metrics_dict["train_acc_dict"][clf_name] = metrics_dict["train_acc_dict"][clf_name] / 5
+        else:
+            metrics_dict["train_acc_dict"][clf_name] += train_acc
 
-        metrics_dict["train_acc_dict"].setdefault(clf_name, {}).setdefault(str(dataset_step_id), train_acc)
-        metrics_dict["train_acc_dict"][clf_name][str(dataset_step_id)] = (
-            train_acc + metrics_dict["train_acc_dict"][clf_name].get(str(dataset_step_id), train_acc)
-        ) / 2
+        if clf_name not in metrics_dict["train_f1_dict"] or seed == 41:
+            metrics_dict["train_f1_dict"][clf_name] = train_f1
+        elif seed == 45:
+            metrics_dict["train_f1_dict"][clf_name] += train_f1
+            metrics_dict["train_f1_dict"][clf_name] = metrics_dict["train_f1_dict"][clf_name] / 5
+        else:
+            metrics_dict["train_f1_dict"][clf_name] += train_f1
 
-
-
-        #metrics_dict["train_f1_dict"][clf_name][str(dataset_step_id)] = (train_f1 + metrics_dict["train_f1_dict"][str(dataset_step_id)].get(str(dataset_step_id), train_f1)) / 2
-
-        metrics_dict["train_f1_dict"].setdefault(clf_name, {}).setdefault(str(dataset_step_id), train_f1)
-        metrics_dict["train_f1_dict"][clf_name][str(dataset_step_id)] = (
-            train_f1 + metrics_dict["train_f1_dict"][clf_name].get(str(dataset_step_id), train_f1)
-        ) / 2
-
-        metrics_dict["test_acc_dict"].setdefault(clf_name, {}).setdefault(str(dataset_step_id), test_acc)
-        metrics_dict["test_acc_dict"][clf_name][str(dataset_step_id)] = (
-            test_acc + metrics_dict["test_acc_dict"][clf_name].get(str(dataset_step_id), test_acc)
-        ) / 2
-
-        metrics_dict["test_f1_dict"].setdefault(clf_name, {}).setdefault(str(dataset_step_id), test_f1)
-        metrics_dict["test_f1_dict"][clf_name][str(dataset_step_id)] = (
-            test_f1 + metrics_dict["test_f1_dict"][clf_name].get(str(dataset_step_id), test_f1)
-        ) / 2
-
-
+        
 
         if clf_name not in metrics_dict["test_acc_dict"] or seed == 41:
             metrics_dict["test_acc_dict"][clf_name] = test_acc
+        elif seed == 45:
+            metrics_dict["test_acc_dict"][clf_name] += test_acc
+            metrics_dict["test_acc_dict"][clf_name] = metrics_dict["test_acc_dict"][clf_name] / 5
         else:
-            metrics_dict["test_acc_dict"][clf_name] = (test_acc + metrics_dict["test_acc_dict"][clf_name]) / 2
+            metrics_dict["test_acc_dict"][clf_name] += test_acc
 
         
-        if clf_name not in metrics_dict["test_f1_dict"]:
+
+        if clf_name not in metrics_dict["test_f1_dict"] or seed == 41:
             metrics_dict["test_f1_dict"][clf_name] = test_f1
+        elif seed == 45:
+            metrics_dict["test_f1_dict"][clf_name] += test_f1
+            metrics_dict["test_f1_dict"][clf_name] = metrics_dict["test_f1_dict"][clf_name] / 5
         else:
-            metrics_dict["test_f1_dict"][clf_name] = (test_f1 + metrics_dict["test_f1_dict"][clf_name]) / 2
+            metrics_dict["test_f1_dict"][clf_name] += test_f1
+
+
+
+        # if clf_name not in metrics_dict["train_acc_dict"] or seed == 41:
+        #     metrics_dict["train_acc_dict"][clf_name] = train_acc
+        # else:
+        #     metrics_dict["train_acc_dict"][clf_name] = (train_acc + metrics_dict["train_acc_dict"][clf_name]) / 2
+
+        
+        # if clf_name not in metrics_dict["train_f1_dict"]  or seed == 41:
+        #     metrics_dict["train_f1_dict"][clf_name] = train_f1
+        # else:
+        #     metrics_dict["train_f1_dict"][clf_name] = (train_f1 + metrics_dict["train_f1_dict"][clf_name]) / 2
+
+
+
+
+        # if clf_name not in metrics_dict["test_acc_dict"] or seed == 41:
+        #     metrics_dict["test_acc_dict"][clf_name] = test_acc
+        # else:
+        #     metrics_dict["test_acc_dict"][clf_name] = (test_acc + metrics_dict["test_acc_dict"][clf_name]) / 2
+
+        
+        # if clf_name not in metrics_dict["test_f1_dict"]  or seed == 41:
+        #     metrics_dict["test_f1_dict"][clf_name] = test_f1
+        # else:
+        #     metrics_dict["test_f1_dict"][clf_name] = (test_f1 + metrics_dict["test_f1_dict"][clf_name]) / 2
 
 
 
 
 
-        # Avg metrics
+        # # Avg metrics
         if clf_name+"_avg" not in metrics_dict["train_acc_avg"]:
             metrics_dict["train_acc_avg"][clf_name+"_avg"] = train_acc
+            metrics_dict["train_acc_avg"][clf_name+"_count"] = 1
         else:
-            metrics_dict["train_acc_avg"][clf_name+"_avg"] = (train_acc + metrics_dict["train_acc_avg"][clf_name+"_avg"]) / 2
+            metrics_dict["train_acc_avg"][clf_name+"_count"] += 1
+            metrics_dict["train_acc_avg"][clf_name+"_avg"] = (train_acc + (metrics_dict["train_acc_avg"][clf_name+"_avg"] \
+            * (metrics_dict["train_acc_avg"][clf_name+"_count"]-1))) / metrics_dict["train_acc_avg"][clf_name+"_count"]
+
+
+
 
         if clf_name+"_avg" not in metrics_dict["train_f1_avg"]:
             metrics_dict["train_f1_avg"][clf_name+"_avg"] = train_f1
+            metrics_dict["train_f1_avg"][clf_name+"_count"] = 1
         else:
-            metrics_dict["train_f1_avg"][clf_name+"_avg"] = (train_f1 + metrics_dict["train_f1_avg"][clf_name+"_avg"]) / 2
-        
+            metrics_dict["train_f1_avg"][clf_name+"_count"] += 1
+            metrics_dict["train_f1_avg"][clf_name+"_avg"] = (train_f1 + (metrics_dict["train_f1_avg"][clf_name+"_avg"] \
+            * (metrics_dict["train_f1_avg"][clf_name+"_count"]-1))) / metrics_dict["train_f1_avg"][clf_name+"_count"]
+
+
+
+
         if clf_name+"_avg" not in metrics_dict["test_acc_avg"]:
-            metrics_dict["test_acc_avg"][clf_name+"_avg"] = test_acc 
+            metrics_dict["test_acc_avg"][clf_name+"_avg"] = test_acc
+            metrics_dict["test_acc_avg"][clf_name+"_count"] = 1
         else:
-            metrics_dict["test_acc_avg"][clf_name+"_avg"] = (test_acc + metrics_dict["test_acc_avg"][clf_name+"_avg"]) / 2
+            metrics_dict["test_acc_avg"][clf_name+"_count"] += 1
+            metrics_dict["test_acc_avg"][clf_name+"_avg"] = (test_acc + (metrics_dict["test_acc_avg"][clf_name+"_avg"] \
+            * (metrics_dict["test_acc_avg"][clf_name+"_count"]-1))) / metrics_dict["test_acc_avg"][clf_name+"_count"]
+
+
+
 
         if clf_name+"_avg" not in metrics_dict["test_f1_avg"]:
-            metrics_dict["test_f1_avg"][clf_name+"_avg"] = test_f1
+            metrics_dict["test_f1_avg"][clf_name+"_avg"] = train_acc
+            metrics_dict["test_f1_avg"][clf_name+"_count"] = 1
         else:
-            metrics_dict["test_f1_avg"][clf_name+"_avg"] = (test_f1 + metrics_dict["test_f1_avg"][clf_name+"_avg"]) / 2
+            metrics_dict["test_f1_avg"][clf_name+"_count"] += 1
+            metrics_dict["test_f1_avg"][clf_name+"_avg"] = (train_acc + (metrics_dict["test_f1_avg"][clf_name+"_avg"] \
+            * (metrics_dict["test_f1_avg"][clf_name+"_count"]-1))) / metrics_dict["test_f1_avg"][clf_name+"_count"]
 
         return metrics_dict
 
