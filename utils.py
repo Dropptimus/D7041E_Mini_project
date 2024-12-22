@@ -413,11 +413,11 @@ def save_metrics_to_dict(clf_name,
 
 
         if clf_name+"_avg" not in metrics_dict["test_f1_avg"]:
-            metrics_dict["test_f1_avg"][clf_name+"_avg"] = train_acc
+            metrics_dict["test_f1_avg"][clf_name+"_avg"] = test_f1
             metrics_dict["test_f1_avg"][clf_name+"_count"] = 1
         else:
             metrics_dict["test_f1_avg"][clf_name+"_count"] += 1
-            metrics_dict["test_f1_avg"][clf_name+"_avg"] = (train_acc + (metrics_dict["test_f1_avg"][clf_name+"_avg"] \
+            metrics_dict["test_f1_avg"][clf_name+"_avg"] = (test_f1 + (metrics_dict["test_f1_avg"][clf_name+"_avg"] \
             * (metrics_dict["test_f1_avg"][clf_name+"_count"]-1))) / metrics_dict["test_f1_avg"][clf_name+"_count"]
 
         return metrics_dict
@@ -454,3 +454,11 @@ def import_dataset(uci_id, encoder):
             
     # last column is target
     return X, y
+
+
+def writer_add_scalars(metric_name, writer, dict, id_step):
+    temp_dict = {}
+    for key in dict:
+        if not key[-5:] == "count":
+            temp_dict[key] = dict[key]
+    writer.add_scalars(metric_name, temp_dict, id_step)
