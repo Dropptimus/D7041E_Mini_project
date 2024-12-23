@@ -40,6 +40,7 @@ def clustering_classification(ClusteringClass, cls_name, params, X_train, y_trai
     Test clustering classification on dataset
     """
     RANDOM_SEED = random_seed
+    print(RANDOM_SEED)
 
     params = classification_cv(ClusteringClass, cls_name, params, X_train, y_train, k_folds, random_seed)
 
@@ -77,6 +78,7 @@ def clustering_classification(ClusteringClass, cls_name, params, X_train, y_trai
 def classification_cv(ClusteringClass, cls_name, params, X_train, y_train, k_folds, random_seed):
     K_FOLDS = k_folds
     RANDOM_SEED = random_seed
+    print(RANDOM_SEED)
 
     # Create all parameter combinations
     # https://stackoverflow.com/questions/64645075/how-to-iterate-through-all-dictionary-combinations
@@ -93,7 +95,7 @@ def classification_cv(ClusteringClass, cls_name, params, X_train, y_train, k_fol
         avg_valid_acc = 0
         # create clustering class
         clustering_algorithm = ClusteringClass(random_state=RANDOM_SEED, **param_comb)
-        kf = StratifiedKFold(n_splits=K_FOLDS, random_state=42, shuffle=True)
+        kf = StratifiedKFold(n_splits=K_FOLDS, random_state=RANDOM_SEED, shuffle=True)
         kf.get_n_splits(X_train)
 
         # Loop through the folds
@@ -116,14 +118,30 @@ def classification_cv(ClusteringClass, cls_name, params, X_train, y_train, k_fol
 
             # Using most common label in cluster to give label to whole cluster
             labels_map_cv = {}
+            print(np.unique(cluster_labels_cv))
             for cluster_cv in np.unique(cluster_labels_cv):
                 # selects the most common label for that cluster
                 class_label_cv = mode(y_train_cv[cluster_labels_cv == cluster_cv])[0]
                 labels_map_cv[cluster_cv] = class_label_cv # map that label to the cluster
+                #print(labels_map_cv)
             # maps cluster to labels
             y_pred_train_cv = np.array([labels_map_cv[cluster_cv] for cluster_cv in cluster_labels_cv])
-            y_pred_valid = np.array([labels_map_cv[cluster_cv] for cluster_cv in valid_clusters])
-            valid_acc = accuracy_score(y_valid, y_pred_valid)
+            
+            print("labels_map_cv keys:", labels_map_cv.keys())
+            print("valid_clusters:", valid_clusters)
+            
+            skipped_indices = []
+            valid_predictions = []
+
+            for i, cluster_cv in enumerate(valid_clusters):
+                if cluster_cv in labels_map_cv:
+                    valid_predictions.append(labels_map_cv[cluster_cv])
+                else:
+                    skipped_indices.append(i)
+
+            y_pred_valid = np.array(valid_predictions)
+            filtered_y_valid = np.delete(y_valid, skipped_indices)
+            valid_acc = accuracy_score(filtered_y_valid, y_pred_valid)
             train_acc = accuracy_score(y_train_cv, y_pred_train_cv)
 
             avg_train_acc += train_acc
