@@ -68,9 +68,21 @@ def clustering_classification(ClusteringClass, cls_name, params, X_train, y_trai
 
     # predict and map for test set
     test_clusters = clf.predict(X_test)
-    y_pred_test = np.array([labels_map[cluster] for cluster in test_clusters])
+    
+    # make sure that predicted label for validation set exist for mapping, else skip them
+    skipped_indices = []
+    test_predictions = []
 
-    train_acc, train_f1, test_acc, test_f1, cm_train, cm_test = metrics_and_plot_cm(cls_name, y_train, y_pred_train, y_test, y_pred_test)
+    for i, cluster_cv in enumerate(test_clusters):
+        if cluster_cv in labels_map:
+            test_predictions.append(labels_map[cluster_cv])
+        else:
+            skipped_indices.append(i)
+
+    y_pred_test = np.array(test_predictions)
+    filtered_y_valid = np.delete(y_test, skipped_indices)
+            
+    train_acc, train_f1, test_acc, test_f1, cm_train, cm_test = metrics_and_plot_cm(cls_name, y_train, y_pred_train, filtered_y_valid, y_pred_test)
 
     return train_acc, train_f1, test_acc, test_f1, cm_train, cm_test
 
@@ -118,18 +130,15 @@ def classification_cv(ClusteringClass, cls_name, params, X_train, y_train, k_fol
 
             # Using most common label in cluster to give label to whole cluster
             labels_map_cv = {}
-            print(np.unique(cluster_labels_cv))
             for cluster_cv in np.unique(cluster_labels_cv):
                 # selects the most common label for that cluster
                 class_label_cv = mode(y_train_cv[cluster_labels_cv == cluster_cv])[0]
                 labels_map_cv[cluster_cv] = class_label_cv # map that label to the cluster
-                #print(labels_map_cv)
+                
             # maps cluster to labels
             y_pred_train_cv = np.array([labels_map_cv[cluster_cv] for cluster_cv in cluster_labels_cv])
             
-            print("labels_map_cv keys:", labels_map_cv.keys())
-            print("valid_clusters:", valid_clusters)
-            
+            # make sure that predicted label for validation set exist for mapping, else skip them
             skipped_indices = []
             valid_predictions = []
 
