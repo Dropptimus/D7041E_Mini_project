@@ -311,6 +311,9 @@ def save_metrics_to_dict(clf_name,
                          ):
         dataset_step_id += 1
 
+        # Caclulate the average across 5 seeds
+        #TODO make dynamic to different seeds
+        # train accuracy
         if clf_name not in metrics_dict["train_acc_dict"] or seed == 41:
             metrics_dict["train_acc_dict"][clf_name] = train_acc
         elif seed == 45:
@@ -319,6 +322,7 @@ def save_metrics_to_dict(clf_name,
         else:
             metrics_dict["train_acc_dict"][clf_name] += train_acc
 
+        # train f1
         if clf_name not in metrics_dict["train_f1_dict"] or seed == 41:
             metrics_dict["train_f1_dict"][clf_name] = train_f1
         elif seed == 45:
@@ -327,8 +331,7 @@ def save_metrics_to_dict(clf_name,
         else:
             metrics_dict["train_f1_dict"][clf_name] += train_f1
 
-        
-
+        # test accuracy
         if clf_name not in metrics_dict["test_acc_dict"] or seed == 41:
             metrics_dict["test_acc_dict"][clf_name] = test_acc
         elif seed == 45:
@@ -337,8 +340,7 @@ def save_metrics_to_dict(clf_name,
         else:
             metrics_dict["test_acc_dict"][clf_name] += test_acc
 
-        
-
+        # test f1
         if clf_name not in metrics_dict["test_f1_dict"] or seed == 41:
             metrics_dict["test_f1_dict"][clf_name] = test_f1
         elif seed == 45:
@@ -348,37 +350,8 @@ def save_metrics_to_dict(clf_name,
             metrics_dict["test_f1_dict"][clf_name] += test_f1
 
 
-
-        # if clf_name not in metrics_dict["train_acc_dict"] or seed == 41:
-        #     metrics_dict["train_acc_dict"][clf_name] = train_acc
-        # else:
-        #     metrics_dict["train_acc_dict"][clf_name] = (train_acc + metrics_dict["train_acc_dict"][clf_name]) / 2
-
-        
-        # if clf_name not in metrics_dict["train_f1_dict"]  or seed == 41:
-        #     metrics_dict["train_f1_dict"][clf_name] = train_f1
-        # else:
-        #     metrics_dict["train_f1_dict"][clf_name] = (train_f1 + metrics_dict["train_f1_dict"][clf_name]) / 2
-
-
-
-
-        # if clf_name not in metrics_dict["test_acc_dict"] or seed == 41:
-        #     metrics_dict["test_acc_dict"][clf_name] = test_acc
-        # else:
-        #     metrics_dict["test_acc_dict"][clf_name] = (test_acc + metrics_dict["test_acc_dict"][clf_name]) / 2
-
-        
-        # if clf_name not in metrics_dict["test_f1_dict"]  or seed == 41:
-        #     metrics_dict["test_f1_dict"][clf_name] = test_f1
-        # else:
-        #     metrics_dict["test_f1_dict"][clf_name] = (test_f1 + metrics_dict["test_f1_dict"][clf_name]) / 2
-
-
-
-
-
-        # # Avg metrics
+        # Avg metrics
+        # train accuracy
         if clf_name+"_avg" not in metrics_dict["train_acc_avg"]:
             metrics_dict["train_acc_avg"][clf_name+"_avg"] = train_acc
             metrics_dict["train_acc_avg"][clf_name+"_count"] = 1
@@ -387,9 +360,7 @@ def save_metrics_to_dict(clf_name,
             metrics_dict["train_acc_avg"][clf_name+"_avg"] = (train_acc + (metrics_dict["train_acc_avg"][clf_name+"_avg"] \
             * (metrics_dict["train_acc_avg"][clf_name+"_count"]-1))) / metrics_dict["train_acc_avg"][clf_name+"_count"]
 
-
-
-
+        # train f1
         if clf_name+"_avg" not in metrics_dict["train_f1_avg"]:
             metrics_dict["train_f1_avg"][clf_name+"_avg"] = train_f1
             metrics_dict["train_f1_avg"][clf_name+"_count"] = 1
@@ -398,9 +369,7 @@ def save_metrics_to_dict(clf_name,
             metrics_dict["train_f1_avg"][clf_name+"_avg"] = (train_f1 + (metrics_dict["train_f1_avg"][clf_name+"_avg"] \
             * (metrics_dict["train_f1_avg"][clf_name+"_count"]-1))) / metrics_dict["train_f1_avg"][clf_name+"_count"]
 
-
-
-
+        # test accuracy
         if clf_name+"_avg" not in metrics_dict["test_acc_avg"]:
             metrics_dict["test_acc_avg"][clf_name+"_avg"] = test_acc
             metrics_dict["test_acc_avg"][clf_name+"_count"] = 1
@@ -409,9 +378,7 @@ def save_metrics_to_dict(clf_name,
             metrics_dict["test_acc_avg"][clf_name+"_avg"] = (test_acc + (metrics_dict["test_acc_avg"][clf_name+"_avg"] \
             * (metrics_dict["test_acc_avg"][clf_name+"_count"]-1))) / metrics_dict["test_acc_avg"][clf_name+"_count"]
 
-
-
-
+        # test f1
         if clf_name+"_avg" not in metrics_dict["test_f1_avg"]:
             metrics_dict["test_f1_avg"][clf_name+"_avg"] = test_f1
             metrics_dict["test_f1_avg"][clf_name+"_count"] = 1
