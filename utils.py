@@ -89,7 +89,7 @@ def clustering_classification(ClusteringClass, cls_name, params, X_train, y_trai
 def classification_cv(ClusteringClass, cls_name, params, X_train, y_train, k_folds, random_seed):
     K_FOLDS = k_folds
     RANDOM_SEED = random_seed
-    
+
     # Create all parameter combinations
     # https://stackoverflow.com/questions/64645075/how-to-iterate-through-all-dictionary-combinations
     # https://stackoverflow.com/questions/3494906/how-do-i-merge-a-list-of-dicts-into-a-single-dict
@@ -106,6 +106,7 @@ def classification_cv(ClusteringClass, cls_name, params, X_train, y_train, k_fol
         # create clustering class
         clustering_algorithm = ClusteringClass(random_state=RANDOM_SEED, **param_comb)
         kf = StratifiedKFold(n_splits=K_FOLDS, random_state=RANDOM_SEED, shuffle=True)
+
         kf.get_n_splits(X_train)
 
         # Loop through the folds
@@ -296,7 +297,7 @@ def test_classifier(clf, clf_name, params, X_train, y_train, X_test, y_test, dis
     gs_knn = GridSearchCV(pipe,
                         param_grid=params,
                         scoring=scoring,
-                        cv=5,)
+                        cv=5)
 
     # Ravel to convert from (len, 1) shape to (len,), warning from sk-learn
     y_train = np.ravel(y_train)
