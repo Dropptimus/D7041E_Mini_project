@@ -40,7 +40,6 @@ def clustering_classification(ClusteringClass, cls_name, params, X_train, y_trai
     Test clustering classification on dataset
     """
     RANDOM_SEED = random_seed
-    print(RANDOM_SEED)
 
     params = classification_cv(ClusteringClass, cls_name, params, X_train, y_train, k_folds, random_seed)
 
@@ -90,8 +89,7 @@ def clustering_classification(ClusteringClass, cls_name, params, X_train, y_trai
 def classification_cv(ClusteringClass, cls_name, params, X_train, y_train, k_folds, random_seed):
     K_FOLDS = k_folds
     RANDOM_SEED = random_seed
-    print(RANDOM_SEED)
-
+    
     # Create all parameter combinations
     # https://stackoverflow.com/questions/64645075/how-to-iterate-through-all-dictionary-combinations
     # https://stackoverflow.com/questions/3494906/how-do-i-merge-a-list-of-dicts-into-a-single-dict
@@ -423,9 +421,7 @@ def import_dataset(uci_id, encoder):
     # https://stackoverflow.com/questions/29803093/check-which-columns-in-dataframe-are-categorical
     cols = X.columns
     num_cols = X._get_numeric_data().columns
-    #print(num_cols)
     categorical_cols = list(set(cols) - set(num_cols))
-    #print(categorical_cols)
     X.loc[:, categorical_cols] = encode_categorical_features(X[categorical_cols], encoder)
     
     # check if encoding has worked
