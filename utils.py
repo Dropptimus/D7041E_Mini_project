@@ -67,9 +67,21 @@ def clustering_classification(ClusteringClass, cls_name, params, X_train, y_trai
 
     # predict and map for test set
     test_clusters = clf.predict(X_test)
-    y_pred_test = np.array([labels_map[cluster] for cluster in test_clusters])
+    
+    # make sure that predicted label for validation set exist for mapping, else skip them
+    skipped_indices = []
+    test_predictions = []
 
-    train_acc, train_f1, test_acc, test_f1, cm_train, cm_test = metrics_and_plot_cm(cls_name, y_train, y_pred_train, y_test, y_pred_test)
+    for i, cluster_cv in enumerate(test_clusters):
+        if cluster_cv in labels_map:
+            test_predictions.append(labels_map[cluster_cv])
+        else:
+            skipped_indices.append(i)
+
+    y_pred_test = np.array(test_predictions)
+    filtered_y_valid = np.delete(y_test, skipped_indices)
+            
+    train_acc, train_f1, test_acc, test_f1, cm_train, cm_test = metrics_and_plot_cm(cls_name, y_train, y_pred_train, filtered_y_valid, y_pred_test)
 
     return train_acc, train_f1, test_acc, test_f1, cm_train, cm_test
 
@@ -93,7 +105,8 @@ def classification_cv(ClusteringClass, cls_name, params, X_train, y_train, k_fol
         avg_valid_acc = 0
         # create clustering class
         clustering_algorithm = ClusteringClass(random_state=RANDOM_SEED, **param_comb)
-        kf = StratifiedKFold(n_splits=K_FOLDS, random_state=42, shuffle=True)
+        kf = StratifiedKFold(n_splits=K_FOLDS, random_state=RANDOM_SEED, shuffle=True)
+
         kf.get_n_splits(X_train)
 
         # Loop through the folds
@@ -120,10 +133,23 @@ def classification_cv(ClusteringClass, cls_name, params, X_train, y_train, k_fol
                 # selects the most common label for that cluster
                 class_label_cv = mode(y_train_cv[cluster_labels_cv == cluster_cv])[0]
                 labels_map_cv[cluster_cv] = class_label_cv # map that label to the cluster
+                
             # maps cluster to labels
             y_pred_train_cv = np.array([labels_map_cv[cluster_cv] for cluster_cv in cluster_labels_cv])
-            y_pred_valid = np.array([labels_map_cv[cluster_cv] for cluster_cv in valid_clusters])
-            valid_acc = accuracy_score(y_valid, y_pred_valid)
+            
+            # make sure that predicted label for validation set exist for mapping, else skip them
+            skipped_indices = []
+            valid_predictions = []
+
+            for i, cluster_cv in enumerate(valid_clusters):
+                if cluster_cv in labels_map_cv:
+                    valid_predictions.append(labels_map_cv[cluster_cv])
+                else:
+                    skipped_indices.append(i)
+
+            y_pred_valid = np.array(valid_predictions)
+            filtered_y_valid = np.delete(y_valid, skipped_indices)
+            valid_acc = accuracy_score(filtered_y_valid, y_pred_valid)
             train_acc = accuracy_score(y_train_cv, y_pred_train_cv)
 
             avg_train_acc += train_acc
@@ -306,25 +332,74 @@ def save_metrics_to_dict(clf_name,
                          test_acc, 
                          test_f1, 
                          metrics_dict,
-                         length
+                         dataset_step_id,
+                         seed
                          ):
-        length += 1
+        dataset_step_id += 1
 
-        metrics_dict["train_acc_dict"][clf_name] = train_acc
-        metrics_dict["train_f1_dict"][clf_name] = train_f1
-        metrics_dict["test_acc_dict"][clf_name] = test_acc
-        metrics_dict["test_f1_dict"][clf_name] = test_f1
-
-        if length == 1:
-            metrics_dict["train_acc_avg"][clf_name+"_avg"] = train_acc
-            metrics_dict["train_f1_avg"][clf_name+"_avg"] = train_f1
-            metrics_dict["test_acc_avg"][clf_name+"_avg"] = test_acc 
-            metrics_dict["test_f1_avg"][clf_name+"_avg"] = test_f1
+        # Caclulate the average across 5 seeds
+        #TODO make dynamic to different seeds
+        # train accuracy
+        if clf_name not in metrics_dict["train_acc_dict"]:
+            metrics_dict["train_acc_dict"][clf_name] = train_acc
         else:
-            metrics_dict["train_acc_avg"][clf_name+"_avg"] = (train_acc + metrics_dict["train_acc_avg"][clf_name+"_avg"]) / 2
-            metrics_dict["train_f1_avg"][clf_name+"_avg"] = (train_f1 + metrics_dict["train_f1_avg"][clf_name+"_avg"]) / 2
-            metrics_dict["test_acc_avg"][clf_name+"_avg"] = (test_acc + metrics_dict["test_acc_avg"][clf_name+"_avg"]) / 2
-            metrics_dict["test_f1_avg"][clf_name+"_avg"] = (test_f1 + metrics_dict["test_f1_avg"][clf_name+"_avg"]) / 2
+            metrics_dict["train_acc_dict"][clf_name] += train_acc
+
+        # train f1
+        if clf_name not in metrics_dict["train_f1_dict"]:
+            metrics_dict["train_f1_dict"][clf_name] = train_f1
+        else:
+            metrics_dict["train_f1_dict"][clf_name] += train_f1
+
+        # test accuracy
+        if clf_name not in metrics_dict["test_acc_dict"]:
+            metrics_dict["test_acc_dict"][clf_name] = test_acc
+        else:
+            metrics_dict["test_acc_dict"][clf_name] += test_acc
+
+        # test f1
+        if clf_name not in metrics_dict["test_f1_dict"]:
+            metrics_dict["test_f1_dict"][clf_name] = test_f1
+        else:
+            metrics_dict["test_f1_dict"][clf_name] += test_f1
+
+
+        # Avg metrics
+        # train accuracy
+        if clf_name+"_avg" not in metrics_dict["train_acc_avg"]:
+            metrics_dict["train_acc_avg"][clf_name+"_avg"] = train_acc
+            metrics_dict["train_acc_avg"][clf_name+"_count"] = 1
+        else:
+            metrics_dict["train_acc_avg"][clf_name+"_count"] += 1
+            metrics_dict["train_acc_avg"][clf_name+"_avg"] = (train_acc + (metrics_dict["train_acc_avg"][clf_name+"_avg"] \
+            * (metrics_dict["train_acc_avg"][clf_name+"_count"]-1))) / metrics_dict["train_acc_avg"][clf_name+"_count"]
+
+        # train f1
+        if clf_name+"_avg" not in metrics_dict["train_f1_avg"]:
+            metrics_dict["train_f1_avg"][clf_name+"_avg"] = train_f1
+            metrics_dict["train_f1_avg"][clf_name+"_count"] = 1
+        else:
+            metrics_dict["train_f1_avg"][clf_name+"_count"] += 1
+            metrics_dict["train_f1_avg"][clf_name+"_avg"] = (train_f1 + (metrics_dict["train_f1_avg"][clf_name+"_avg"] \
+            * (metrics_dict["train_f1_avg"][clf_name+"_count"]-1))) / metrics_dict["train_f1_avg"][clf_name+"_count"]
+
+        # test accuracy
+        if clf_name+"_avg" not in metrics_dict["test_acc_avg"]:
+            metrics_dict["test_acc_avg"][clf_name+"_avg"] = test_acc
+            metrics_dict["test_acc_avg"][clf_name+"_count"] = 1
+        else:
+            metrics_dict["test_acc_avg"][clf_name+"_count"] += 1
+            metrics_dict["test_acc_avg"][clf_name+"_avg"] = (test_acc + (metrics_dict["test_acc_avg"][clf_name+"_avg"] \
+            * (metrics_dict["test_acc_avg"][clf_name+"_count"]-1))) / metrics_dict["test_acc_avg"][clf_name+"_count"]
+
+        # test f1
+        if clf_name+"_avg" not in metrics_dict["test_f1_avg"]:
+            metrics_dict["test_f1_avg"][clf_name+"_avg"] = test_f1
+            metrics_dict["test_f1_avg"][clf_name+"_count"] = 1
+        else:
+            metrics_dict["test_f1_avg"][clf_name+"_count"] += 1
+            metrics_dict["test_f1_avg"][clf_name+"_avg"] = (test_f1 + (metrics_dict["test_f1_avg"][clf_name+"_avg"] \
+            * (metrics_dict["test_f1_avg"][clf_name+"_count"]-1))) / metrics_dict["test_f1_avg"][clf_name+"_count"]
 
         return metrics_dict
 
@@ -347,9 +422,7 @@ def import_dataset(uci_id, encoder):
     # https://stackoverflow.com/questions/29803093/check-which-columns-in-dataframe-are-categorical
     cols = X.columns
     num_cols = X._get_numeric_data().columns
-    #print(num_cols)
     categorical_cols = list(set(cols) - set(num_cols))
-    #print(categorical_cols)
     X.loc[:, categorical_cols] = encode_categorical_features(X[categorical_cols], encoder)
     
     # check if encoding has worked
@@ -360,3 +433,11 @@ def import_dataset(uci_id, encoder):
             
     # last column is target
     return X, y
+
+
+def writer_add_scalars(metric_name, writer, dict, id_step):
+    temp_dict = {}
+    for key in dict:
+        if not key[-5:] == "count":
+            temp_dict[key] = dict[key]
+    writer.add_scalars(metric_name, temp_dict, id_step)
